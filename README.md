@@ -26,7 +26,7 @@ The same code is npm-packaged and used for local pre-commit validation of the br
 
 ## Example usage
 
-```
+```yaml
 uses: worksome/jira-branch-name-validator-action@main
 with:
   branch-name: $BRANCH_NAME
@@ -34,7 +34,7 @@ with:
 
 ## Full example usage
 
-```
+```yaml
 name: Code Analysis
 
 on:
@@ -67,13 +67,14 @@ jobs:
 ```
 
 ## Setting up for action development
-```
+
+```shell
 npm i -g @vercel/ncc
 ```
 
 ## Building and releasing the action
 
-```
+```shell
 npm run build
 ```
 
