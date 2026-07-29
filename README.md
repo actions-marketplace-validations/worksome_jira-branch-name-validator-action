@@ -18,9 +18,13 @@ The same code is npm-packaged and used for local pre-commit validation of the br
 
 **Required** The GitHub API response JSON containing the commits of the PR.
 
+### `prefixes`
+
+**Optional** The allowed Jira project prefixes, separated by commas or whitespace (default is `JIRA`). A branch is valid when it starts with any one of them, e.g. `prefixes: JIRA, INFRA` accepts both `JIRA-123_fixing-bug` and `INFRA-123_fixing-bug`.
+
 ### `prefix`
 
-**Optional** The Jira project prefix (default is `JIRA`).
+**Deprecated** Use `prefixes` instead. A single Jira project prefix. It is only read when `prefixes` is not set.
 
 ***
 
@@ -62,7 +66,7 @@ jobs:
           branch-name: ${{ github.event.pull_request.head.ref }}
           pr-title: ${{ github.event.pull_request.title }}
           commits: ${{ steps.get_pr_commits.outputs.data }}
-          prefix: JIRA
+          prefixes: JIRA, INFRA
 
 ```
 
@@ -93,4 +97,10 @@ The local branch validator can be manually triggered on repositories that use th
 
 ```shell
 node_modules/.bin/branch-validator
+```
+
+By default only the `JIRA` prefix is accepted. Pass `--prefix` (repeatable, or comma-separated) to allow others:
+
+```shell
+node_modules/.bin/branch-validator --prefix JIRA --prefix INFRA
 ```
