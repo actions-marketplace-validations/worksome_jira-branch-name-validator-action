@@ -1,6 +1,6 @@
 {
   "name": "@worksome/jira-branch-name-validator",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "description": "A GitHub action for ensuring that the branch name contains a valid JIRA id",
   "main": "index.js",
   "scripts": {
@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/worksome/jira-branch-name-validator-action.git"
+    "url": "git+https://github.com/worksome/jira-branch-name-validator-action.git"
   },
   "author": "",
   "license": "MIT",
@@ -20,7 +20,7 @@
     "dist"
   ],
   "bin": {
-    "branch-validator": "./dist/local/index.js"
+    "branch-validator": "dist/local/index.js"
   },
   "publishConfig": {
     "@worksome:registry": "https://npm.pkg.github.com"
