@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 
 import {exec as cpExec} from 'child_process';
-import validateBranchName from './validator';
+import validateBranchName, {DEFAULT_PREFIXES, parsePrefixes} from './validator';
 
 async function run(): Promise<void> {
+    const prefixes = parsePrefixArguments(process.argv.slice(2));
     const branchName = await getCurrentBranch();
-    const [, results] = validateBranchName(branchName, 'JIRA');
+    const [, results] = validateBranchName(branchName, prefixes);
 
     results.forEach(message => {
         console.log(message);
@@ -16,6 +17,48 @@ async function run(): Promise<void> {
     }
 
     process.exit(0)
+}
+
+function parsePrefixArguments(args: string[]): string[] {
+    const prefixes: string[] = []
+
+    for (let i = 0; i < args.length; i++) {
+        const arg = args[i]
+
+        if (arg === '--prefix' || arg === '-p') {
+            const value = args[++i]
+
+            if (value === undefined || value.startsWith('-')) {
+                throw new Error(`The "${arg}" option requires a value, e.g. "${arg} JIRA".`)
+            }
+
+            prefixes.push(...parseRequiredPrefixes(arg, value))
+
+            continue
+        }
+
+        if (arg.startsWith('--prefix=') || arg.startsWith('-p=')) {
+            const separator = arg.indexOf('=')
+
+            prefixes.push(...parseRequiredPrefixes(arg.substring(0, separator), arg.substring(separator + 1)))
+
+            continue
+        }
+
+        throw new Error(`Unknown option "${arg}". Usage: branch-validator [--prefix <prefix>]...`)
+    }
+
+    return prefixes.length > 0 ? prefixes : DEFAULT_PREFIXES
+}
+
+function parseRequiredPrefixes(option: string, value: string): string[] {
+    const prefixes = parsePrefixes(value)
+
+    if (prefixes.length === 0) {
+        throw new Error(`The "${option}" option requires a value, e.g. "${option} JIRA".`)
+    }
+
+    return prefixes
 }
 
 async function getCurrentBranch(): Promise<string> {
@@ -61,4 +104,8 @@ async function exec(
     });
 }
 
-run();
+run().catch((error: any) => {
+    console.error(error instanceof Error ? error.message : error);
+
+    process.exit(1)
+});

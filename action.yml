@@ -10,9 +10,11 @@ inputs:
   commits:
     description: The Github API response JSON containing the commits of the PR.
     required: true
+  prefixes:
+    description: The allowed Jira project prefixes, separated by commas or whitespace (default is `JIRA`).
   prefix:
-    description: The Jira project prefix.
-    default: 'JIRA'
+    description: 'The Jira project prefix.'
+    deprecationMessage: 'Use `prefixes` instead.'
 runs:
   using: 'node24'
   main: 'dist/github/index.js'

@@ -1,4 +1,4 @@
-import validateBranchName from './validator';
+import validateBranchName, {DEFAULT_PREFIXES, formatPrefixes, parsePrefixes} from './validator';
 import checkJiraIdConsistency from './jira-id-consistency-check'
 import * as core from '@actions/core';
 
@@ -7,14 +7,24 @@ async function run(): Promise<void> {
         let branchName = core.getInput('branch-name')
         let prTitle = core.getInput('pr-title')
         let commits = core.getInput('commits')
-        let prefix = core.getInput('prefix')
+        let prefixes = parsePrefixes(core.getInput('prefixes'))
+
+        if (prefixes.length === 0) {
+            // `prefix` is the deprecated, single-value spelling of `prefixes`.
+            prefixes = parsePrefixes(core.getInput('prefix'))
+        }
+
+        if (prefixes.length === 0) {
+            prefixes = DEFAULT_PREFIXES
+        }
 
         let prValidation = (prTitle.length > 0 && commits.length > 0)
 
         core.info(`Received the following branch name: ${branchName}.`)
-        core.info(`The format should be \`${prefix}-123_fixing-bug\`.`)
+        core.info(`The format should be \`${prefixes[0]}-123_fixing-bug\`.`)
+        core.info(`The allowed prefixes are ${formatPrefixes(prefixes)}.`)
 
-        let [jiraId, results] = validateBranchName(branchName, prefix)
+        let [jiraId, results] = validateBranchName(branchName, prefixes)
 
         core.info(`Extracted the following JIRA ID from branch name: ${jiraId}`)
 

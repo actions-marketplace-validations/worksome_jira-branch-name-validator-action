@@ -5,11 +5,23 @@
 var import_child_process = require("child_process");
 
 // src/validator.ts
-function validator_default(branchName, prefix) {
-  let result = [];
-  if (!branchName.startsWith(prefix)) {
-    result.push(`Branch doesn't start with \`${prefix}\` prefix, found ${branchName}.`);
+var DEFAULT_PREFIXES = ["JIRA"];
+function parsePrefixes(value) {
+  return value.split(/[\s,]+/).map((prefix) => prefix.trim()).filter((prefix) => prefix.length > 0);
+}
+function formatPrefixes(prefixes) {
+  return prefixes.map((prefix) => `\`${prefix}\``).join(", ");
+}
+function validator_default(branchName, prefixes) {
+  if (prefixes.length === 0) {
+    throw new Error("At least one prefix has to be provided.");
   }
+  let result = [];
+  const matchedPrefix = prefixes.filter((prefix2) => branchName.startsWith(prefix2)).sort((a, b) => b.length - a.length)[0];
+  if (matchedPrefix === void 0) {
+    result.push(prefixes.length === 1 ? `Branch doesn't start with \`${prefixes[0]}\` prefix, found ${branchName}.` : `Branch doesn't start with one of the ${formatPrefixes(prefixes)} prefixes, found ${branchName}.`);
+  }
+  const prefix = matchedPrefix ?? (branchName.match(/^[a-zA-Z]+/) ?? [""])[0];
   branchName = branchName.substring(prefix.length);
   if (!branchName.startsWith("-")) {
     result.push(`Separator after prefix is not \`-\`, found ${branchName.substring(0, 1)}.`);
@@ -40,8 +52,9 @@ function validator_default(branchName, prefix) {
 
 // src/pre-commit.ts
 async function run() {
+  const prefixes = parsePrefixArguments(process.argv.slice(2));
   const branchName = await getCurrentBranch();
-  const [, results] = validator_default(branchName, "JIRA");
+  const [, results] = validator_default(branchName, prefixes);
   results.forEach((message) => {
     console.log(message);
   });
@@ -49,6 +62,34 @@ async function run() {
     process.exit(1);
   }
   process.exit(0);
+}
+function parsePrefixArguments(args) {
+  const prefixes = [];
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === "--prefix" || arg === "-p") {
+      const value = args[++i];
+      if (value === void 0 || value.startsWith("-")) {
+        throw new Error(`The "${arg}" option requires a value, e.g. "${arg} JIRA".`);
+      }
+      prefixes.push(...parseRequiredPrefixes(arg, value));
+      continue;
+    }
+    if (arg.startsWith("--prefix=") || arg.startsWith("-p=")) {
+      const separator = arg.indexOf("=");
+      prefixes.push(...parseRequiredPrefixes(arg.substring(0, separator), arg.substring(separator + 1)));
+      continue;
+    }
+    throw new Error(`Unknown option "${arg}". Usage: branch-validator [--prefix <prefix>]...`);
+  }
+  return prefixes.length > 0 ? prefixes : DEFAULT_PREFIXES;
+}
+function parseRequiredPrefixes(option, value) {
+  const prefixes = parsePrefixes(value);
+  if (prefixes.length === 0) {
+    throw new Error(`The "${option}" option requires a value, e.g. "${option} JIRA".`);
+  }
+  return prefixes;
 }
 async function getCurrentBranch() {
   const { stdout, stderr } = await exec("git branch");
@@ -79,4 +120,7 @@ async function exec(command, options = { cwd: process.cwd() }) {
     });
   });
 }
-run();
+run().catch((error) => {
+  console.error(error instanceof Error ? error.message : error);
+  process.exit(1);
+});
